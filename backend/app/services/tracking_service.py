@@ -1,40 +1,43 @@
 """Tracking service."""
-from datetime import datetime, timezone, timedelta
+import json
+from datetime import datetime, timezone
 from uuid import UUID
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from app.core.config import settings
 from app.models.vehicle import Vehicle, VehicleStatus
 from app.models.location import Location
 from app.schemas.location import LocationCreate
+from app.services import alert_engine
 from app.websocket.manager import manager
 import redis.asyncio as redis
 
 
 class TrackingService:
     """Service for vehicle tracking operations."""
-    
+
     LOCATION_CACHE_TTL = 300  # 5 minutes
-    
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
+
+    def __init__(self, redis_url: str = settings.REDIS_URL):
         """
         Initialize tracking service.
-        
+
         Args:
             redis_url: Redis connection URL
         """
         self.redis_url = redis_url
         self.redis_client = None
-    
+
     async def init(self) -> None:
         """Initialize Redis connection."""
         self.redis_client = await redis.from_url(self.redis_url)
-    
+
     async def close(self) -> None:
         """Close Redis connection."""
         if self.redis_client:
             await self.redis_client.close()
-    
+
     async def ingest_location(
         self,
         vehicle_id: UUID,
@@ -43,63 +46,71 @@ class TrackingService:
     ) -> Location:
         """
         Ingest a new GPS location point for a vehicle.
-        
+
         Args:
             vehicle_id: Vehicle ID
             location_data: Location data
             db: Database session
-        
+
         Returns:
             Created location record
         """
-        # Set timestamp if not provided
         if not location_data.timestamp:
             location_data.timestamp = datetime.now(timezone.utc)
-        
-        # Create location record
+
+        # Load the vehicle and its previous location *before* inserting the
+        # new one, so the alert engine can detect enter/exit/threshold
+        # transitions relative to where the vehicle was a moment ago.
+        vehicle = await db.get(Vehicle, vehicle_id)
+        previous_location = await self.get_latest_location(vehicle_id, db)
+
         location = Location(
             vehicle_id=vehicle_id,
             **location_data.model_dump()
         )
-        
+
         db.add(location)
         await db.commit()
         await db.refresh(location)
-        
-        # Update vehicle status
-        stmt = select(Vehicle).where(Vehicle.id == vehicle_id)
-        result = await db.execute(stmt)
-        vehicle = result.scalar_one_or_none()
-        
+
         if vehicle:
             vehicle.status = VehicleStatus.ACTIVE
             await db.commit()
-        
-        # Cache latest location in Redis
+            await alert_engine.evaluate_location(vehicle, previous_location, location, db)
+
         if self.redis_client:
             cache_key = f"location:{vehicle_id}"
-            await self.redis_client.setex(
-                cache_key,
-                self.LOCATION_CACHE_TTL,
-                location.model_dump_json(),
-            )
-        
-        # Broadcast to WebSocket clients
-        await manager.broadcast_to_room(
-            str(vehicle_id),
-            {
-                "type": "location_update",
-                "vehicle_id": str(vehicle_id),
+            cache_payload = {
                 "latitude": location.latitude,
                 "longitude": location.longitude,
                 "speed": location.speed,
                 "heading": location.heading,
+                "battery_level": location.battery_level,
                 "timestamp": location.timestamp.isoformat(),
             }
-        )
-        
+            await self.redis_client.setex(
+                cache_key,
+                self.LOCATION_CACHE_TTL,
+                json.dumps(cache_payload),
+            )
+
+        broadcast_payload = {
+            "type": "location_update",
+            "vehicle_id": str(vehicle_id),
+            "latitude": location.latitude,
+            "longitude": location.longitude,
+            "speed": location.speed,
+            "heading": location.heading,
+            "battery_level": location.battery_level,
+            "status": vehicle.status.value if vehicle else None,
+            "timestamp": location.timestamp.isoformat(),
+        }
+        await manager.broadcast_to_room(str(vehicle_id), broadcast_payload)
+        if vehicle:
+            await manager.broadcast_to_room(f"fleet:{vehicle.user_id}", broadcast_payload)
+
         return location
-    
+
     async def get_latest_location(
         self,
         vehicle_id: UUID,
@@ -107,11 +118,11 @@ class TrackingService:
     ) -> Optional[Location]:
         """
         Get latest location for a vehicle.
-        
+
         Args:
             vehicle_id: Vehicle ID
             db: Database session
-        
+
         Returns:
             Latest location or None
         """
@@ -123,7 +134,7 @@ class TrackingService:
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
-    
+
     async def get_location_history(
         self,
         vehicle_id: UUID,
@@ -134,27 +145,27 @@ class TrackingService:
     ) -> list[Location]:
         """
         Get location history for a vehicle.
-        
+
         Args:
             vehicle_id: Vehicle ID
             start_time: Start time filter
             end_time: End time filter
             limit: Maximum records to return
             db: Database session
-        
+
         Returns:
             List of locations
         """
         stmt = select(Location).where(Location.vehicle_id == vehicle_id)
-        
+
         if start_time:
             stmt = stmt.where(Location.timestamp >= start_time)
-        
+
         if end_time:
             stmt = stmt.where(Location.timestamp <= end_time)
-        
+
         stmt = stmt.order_by(desc(Location.timestamp)).limit(limit)
-        
+
         result = await db.execute(stmt)
         return result.scalars().all()
 
