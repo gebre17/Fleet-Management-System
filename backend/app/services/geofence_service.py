@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from app.core.config import settings
 from app.models.geofence import Geofence, GeofenceVehicle, GeofenceType
 from app.models.vehicle import Vehicle
 from app.schemas.geofence import GeofenceCreate, GeofenceUpdate
@@ -13,8 +14,8 @@ import redis.asyncio as redis
 
 class GeofenceService:
     """Service for geofence operations."""
-    
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
+
+    def __init__(self, redis_url: str = settings.REDIS_URL):
         """
         Initialize geofence service.
         
@@ -215,6 +216,29 @@ class GeofenceService:
         
         return assignment
     
+    @staticmethod
+    async def list_assigned_vehicles(
+        geofence_id: UUID,
+        user_id: UUID,
+        db: AsyncSession,
+    ) -> List[GeofenceVehicle]:
+        """
+        List vehicle assignments for a geofence.
+
+        Args:
+            geofence_id: Geofence ID
+            user_id: User ID (for authorization)
+            db: Database session
+
+        Returns:
+            List of geofence-vehicle assignments
+        """
+        await GeofenceService.get_geofence(geofence_id, user_id, db)
+
+        stmt = select(GeofenceVehicle).where(GeofenceVehicle.geofence_id == geofence_id)
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
     @staticmethod
     async def unassign_vehicle_from_geofence(
         geofence_id: UUID,
