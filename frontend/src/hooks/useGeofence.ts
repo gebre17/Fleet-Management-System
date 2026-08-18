@@ -3,7 +3,7 @@
  */
 import { useCallback } from 'react';
 import { getApiClient } from '@/lib/api';
-import { Geofence, GeofenceCreate, GeofenceListResponse } from '@/types/geofence';
+import { Geofence, GeofenceCreate, GeofenceListResponse, GeofenceVehicleAssignment } from '@/types/geofence';
 
 export const useGeofence = () => {
   const api = getApiClient();
@@ -49,6 +49,14 @@ export const useGeofence = () => {
     [api]
   );
 
+  const listGeofenceVehicles = useCallback(
+    async (geofenceId: string): Promise<GeofenceVehicleAssignment[]> => {
+      const response = await api.get(`/api/v1/geofences/${geofenceId}/vehicles`);
+      return response.data;
+    },
+    [api]
+  );
+
   const assignVehicle = useCallback(
     async (
       geofenceId: string,
@@ -78,6 +86,7 @@ export const useGeofence = () => {
     createGeofence,
     updateGeofence,
     deleteGeofence,
+    listGeofenceVehicles,
     assignVehicle,
     unassignVehicle,
   };
