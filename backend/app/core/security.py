@@ -60,6 +60,29 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     return encoded_jwt
 
 
+async def get_user_from_token(token: str, db: AsyncSession) -> Optional[User]:
+    """Decode a JWT access token and load the corresponding user.
+
+    Returns None (never raises) so both HTTP and WebSocket callers can
+    decide how to respond to an invalid/missing token.
+    """
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        if payload.get("type") == "refresh":
+            return None
+        sub: str = payload.get("sub")
+        if sub is None:
+            return None
+    except JWTError:
+        return None
+
+    stmt = select(User).where(User.id == sub)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db_session),
@@ -70,22 +93,8 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        sub: str = payload.get("sub")
-        if sub is None:
-            raise credentials_exception
-    except JWTError:
+    user = await get_user_from_token(token, db)
+    if user is None or not user.is_active:
         raise credentials_exception
 
-    # Fetch user from database
-    stmt = select(User).where(User.id == sub)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    
-    if user is None:
-        raise credentials_exception
-    
     return user
