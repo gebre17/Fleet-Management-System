@@ -1,4 +1,5 @@
 """Authentication routes."""
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
@@ -23,6 +24,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    """Refresh token request schema."""
+    refresh_token: str
+
+
 class TokenResponse(BaseModel):
     """Token response schema."""
     access_token: str
@@ -32,7 +38,7 @@ class TokenResponse(BaseModel):
 
 class UserResponse(BaseModel):
     """User response schema."""
-    id: str
+    id: UUID
     email: str
     full_name: str
     role: str
@@ -95,39 +101,48 @@ async def login(
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
-    refresh_token: str,
+    request: RefreshRequest,
     db: AsyncSession = Depends(get_db_session),
 ) -> dict:
     """
-    Refresh access token.
-    
+    Exchange a refresh token for a new access/refresh token pair.
+
     Args:
-        refresh_token: Refresh token
+        request: Refresh request containing the refresh token
         db: Database session
-    
+
     Returns:
         New access and refresh tokens
     """
-    # For production, validate token is in whitelist and create new tokens
-    # This is a simplified version
-    from jose import jwt
+    from jose import jwt, JWTError
     from app.core.config import settings
-    
+
     try:
         payload = jwt.decode(
-            refresh_token,
+            request.refresh_token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+            )
         user_id = payload.get("sub")
-    except Exception:
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    user = await db.get(User, user_id)
+    if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
         )
-    
-    tokens = AuthService.create_tokens(user_id)
-    return tokens
+
+    return AuthService.create_tokens(user_id)
 
 
 @router.get("/me", response_model=UserResponse)

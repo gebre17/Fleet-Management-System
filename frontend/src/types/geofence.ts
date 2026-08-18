@@ -31,3 +31,9 @@ export interface GeofenceListResponse {
   total: number;
   items: Geofence[];
 }
+
+export interface GeofenceVehicleAssignment {
+  vehicle_id: string;
+  alert_on_enter: boolean;
+  alert_on_exit: boolean;
+}

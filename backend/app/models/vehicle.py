@@ -2,8 +2,8 @@
 from uuid import uuid4
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, Enum, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
+from app.models.types import GUID
 import enum
 
 
@@ -27,8 +27,8 @@ class Vehicle(Base):
     """Vehicle model."""
     __tablename__ = "vehicles"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID, primary_key=True, default=uuid4)
+    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
     name = Column(String(100), nullable=False)
     plate_number = Column(String(20), unique=True, nullable=False, index=True)
     type = Column(Enum(VehicleType), nullable=False)

@@ -2,16 +2,16 @@
 from uuid import uuid4
 from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, Float, Index, ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
+from app.models.types import GUID
 
 
 class Location(Base):
     """Location model for GPS tracking."""
     __tablename__ = "locations"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    vehicle_id = Column(UUID(as_uuid=True), ForeignKey("vehicles.id"), nullable=False)
+    id = Column(GUID, primary_key=True, default=uuid4)
+    vehicle_id = Column(GUID, ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     altitude = Column(Float)

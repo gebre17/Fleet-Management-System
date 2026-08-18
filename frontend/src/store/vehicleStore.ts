@@ -8,8 +8,10 @@ import { LocationUpdate } from '@/types/location';
 interface VehicleStore {
   vehicles: Vehicle[];
   liveLocations: Record<string, LocationUpdate>;
+  isFleetSocketConnected: boolean;
   setVehicles: (vehicles: Vehicle[]) => void;
   updateLocation: (vehicleId: string, location: LocationUpdate) => void;
+  setFleetSocketConnected: (connected: boolean) => void;
   addVehicle: (vehicle: Vehicle) => void;
   removeVehicle: (vehicleId: string) => void;
 }
@@ -17,8 +19,11 @@ interface VehicleStore {
 export const useVehicleStore = create<VehicleStore>((set) => ({
   vehicles: [],
   liveLocations: {},
+  isFleetSocketConnected: false,
 
   setVehicles: (vehicles) => set({ vehicles }),
+
+  setFleetSocketConnected: (connected) => set({ isFleetSocketConnected: connected }),
 
   updateLocation: (vehicleId, location) =>
     set((state) => ({

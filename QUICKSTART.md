@@ -15,19 +15,24 @@
 
 ```bash
 # 1. Clone and navigate to project
-cd vehicle-tracking-system
+cd Fleet-Management-System
 
-# 2. Start all services
-docker-compose up -d
+# 2. Create your env files
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
 
-# 3. Initialize database (first time only)
-docker-compose exec backend alembic upgrade head
+# 3. Build and start everything (migrations run automatically on backend startup)
+docker-compose up -d --build
 
 # 4. Open browser
 # Frontend: http://localhost:3000
 # API Docs: http://localhost:8000/docs
 # Nginx: http://localhost
 ```
+
+Database migrations run automatically every time the backend container starts
+(`backend/docker-entrypoint.sh` runs `alembic upgrade head` before `uvicorn`).
+You only need to run it manually for local (non-Docker) development.
 
 ### Demo Credentials (if using seed data)
 - Email: `demo@trackfleet.com`
@@ -219,19 +224,20 @@ curl -X GET "http://localhost:8000/api/v1/reports/speed" \
 
 ## WebSocket Connection
 
+WebSocket endpoints require a valid JWT access token as a `token` query
+parameter (browsers can't set custom headers on a WebSocket handshake).
+
 ```javascript
-// Connect to vehicle live tracking
-const ws = new WebSocket('ws://localhost:8000/ws/{vehicle_id}');
+// Live updates for every vehicle you own (used by the Live Map page)
+const ws = new WebSocket(`ws://localhost:8000/ws/fleet?token=${accessToken}`);
+
+// Or live updates for a single vehicle
+const ws = new WebSocket(`ws://localhost:8000/ws/${vehicleId}?token=${accessToken}`);
 
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
-  console.log('Location update:', data);
+  console.log(data.type, data); // "location_update" or "alert"
 };
-
-ws.send(JSON.stringify({
-  action: 'subscribe',
-  vehicle_id: 'vehicle-123'
-}));
 ```
 
 ## Troubleshooting

@@ -1,7 +1,6 @@
 """WebSocket connection manager."""
 from typing import Set, Dict
 from fastapi import WebSocket
-import json
 
 
 class ConnectionManager:
@@ -59,16 +58,6 @@ class ConnectionManager:
             
             for connection in disconnected:
                 self.active_connections[vehicle_id].discard(connection)
-    
-    async def broadcast_all(self, data: dict) -> None:
-        """
-        Broadcast message to all connected clients.
-        
-        Args:
-            data: Data to broadcast
-        """
-        for vehicle_id in list(self.active_connections.keys()):
-            await self.broadcast_to_room(vehicle_id, data)
 
 
 # Global connection manager instance

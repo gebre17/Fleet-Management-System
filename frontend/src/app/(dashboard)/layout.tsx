@@ -6,6 +6,7 @@
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useFleetSocket } from '@/hooks/useFleetSocket';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 
@@ -16,6 +17,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
+  useFleetSocket();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

@@ -1,4 +1,5 @@
 """Geofence routes."""
+from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ from app.schemas.geofence import (
     GeofenceResponse,
     GeofenceListResponse,
     GeofenceVehicleAssignmentRequest,
+    GeofenceVehicleResponse,
 )
 
 router = APIRouter()
@@ -177,6 +179,31 @@ async def assign_vehicle_to_geofence(
     )
     
     return {"message": "Vehicle assigned to geofence"}
+
+
+@router.get("/{geofence_id}/vehicles", response_model=List[GeofenceVehicleResponse])
+async def list_geofence_vehicles(
+    geofence_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> List[GeofenceVehicleResponse]:
+    """
+    List vehicles assigned to a geofence.
+
+    Args:
+        geofence_id: Geofence ID
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        List of vehicle assignments
+    """
+    assignments = await geofence_service.list_assigned_vehicles(
+        geofence_id=geofence_id,
+        user_id=current_user.id,
+        db=db,
+    )
+    return [GeofenceVehicleResponse.model_validate(a) for a in assignments]
 
 
 @router.delete("/{geofence_id}/vehicles/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)

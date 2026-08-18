@@ -5,9 +5,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useGeofence } from '@/hooks/useGeofence';
 import { GeofenceCreate } from '@/types/geofence';
+
+const LiveMap = dynamic(() => import('@/components/map/LiveMap'), { ssr: false });
 
 export default function CreateGeofencePage() {
   const router = useRouter();
@@ -160,6 +163,39 @@ export default function CreateGeofencePage() {
         {/* Circle fields */}
         {geofenceType === 'circle' && (
           <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Click the map to set the center
+              </label>
+              <div className="h-72 rounded-lg overflow-hidden border border-gray-300">
+                <LiveMap
+                  vehicles={[]}
+                  locations={{}}
+                  pickMode
+                  pickedPosition={
+                    formData.center_lat && formData.center_lng
+                      ? [parseFloat(formData.center_lat), parseFloat(formData.center_lng)]
+                      : null
+                  }
+                  previewCircle={
+                    formData.center_lat && formData.center_lng && formData.radius_meters
+                      ? {
+                          center: [parseFloat(formData.center_lat), parseFloat(formData.center_lng)],
+                          radiusMeters: parseFloat(formData.radius_meters),
+                          color: formData.color,
+                        }
+                      : null
+                  }
+                  onPick={(lat, lng) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      center_lat: lat.toFixed(6),
+                      center_lng: lng.toFixed(6),
+                    }))
+                  }
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="center_lat" className="block text-sm font-medium text-gray-700 mb-1">
