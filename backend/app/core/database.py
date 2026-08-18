@@ -2,7 +2,6 @@
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.exc import ProgrammingError
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -32,16 +31,6 @@ async def get_db_session() -> AsyncSession:
     """Dependency to get database session."""
     async with async_session_maker() as session:
         yield session
-
-
-async def init_db() -> None:
-    """Initialize database tables, skipping any that already exist."""
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-    except ProgrammingError as e:
-        # Tables already exist (e.g. container restart) — safe to continue.
-        logger.warning("Database schema already initialised, skipping create_all: %s", e.orig)
 
 
 async def close_db() -> None:
