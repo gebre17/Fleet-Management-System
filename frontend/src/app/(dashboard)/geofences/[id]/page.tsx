@@ -185,7 +185,7 @@ export default function GeofenceDetailPage() {
           </div>
           {geofence.type === 'circle' && (
             <p className="text-xs text-gray-500">
-              Radius: {geofence.radius_meters} m — center/radius editing isn't supported yet; recreate the
+              Radius: {geofence.radius_meters} m — center/radius editing isn&apos;t supported yet; recreate the
               geofence to change them.
             </p>
           )}

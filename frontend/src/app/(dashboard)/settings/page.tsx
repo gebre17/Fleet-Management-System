@@ -57,7 +57,7 @@ export default function SettingsPage() {
         <div>
           <h2 className="text-xl font-bold mb-4">Notifications</h2>
           <p className="text-gray-600 text-sm mb-4">
-            Alerts are delivered live in the app and via the Alerts page. Email digests aren't available yet.
+            Alerts are delivered live in the app and via the Alerts page. Email digests aren&apos;t available yet.
           </p>
           <div className="space-y-3 opacity-50">
             <label className="flex items-center">
