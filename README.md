@@ -161,10 +161,11 @@ Full API documentation is available at `/docs` when the backend is running.
 
 ### WebSocket
 
-Connect to real-time vehicle updates:
+Both endpoints require a JWT access token as a `?token=` query parameter.
 
 ```
-ws://localhost:8000/ws/{vehicle_id}
+ws://localhost:8000/ws/fleet?token=...          # every vehicle you own (used by the Live Map)
+ws://localhost:8000/ws/{vehicle_id}?token=...   # a single vehicle
 ```
 
 Receive location updates in real-time as vehicles move.
@@ -258,12 +259,20 @@ Create production `.env` files with:
 
 ## Security Notes
 
-- All API endpoints require JWT authentication (except auth endpoints)
+- All API endpoints require JWT authentication (except auth endpoints); every
+  vehicle/alert/report/geofence query is additionally scoped to the
+  requesting user's own resources
+- WebSocket connections (`/ws/fleet`, `/ws/{vehicle_id}`) require a valid
+  JWT as a `?token=` query param and are rejected otherwise
 - Passwords are bcrypt-hashed
-- CORS is restricted to frontend origin
-- Use HTTPS in production
+- CORS is restricted via `CORS_ORIGINS_RAW` (comma-separated) — set this to
+  your real domain(s) in production
+- Use HTTPS in production (terminate TLS at nginx/your load balancer)
 - Rotate JWT secret key regularly
-- Enable MQTT authentication in production
+- MQTT authentication is supported — set `MQTT_USERNAME`/`MQTT_PASSWORD`
+  and configure a password file on the Mosquitto broker for production
+  (the shipped `mosquitto.conf` allows anonymous connections, which is only
+  appropriate for local development)
 
 ## Contributing
 
@@ -272,13 +281,4 @@ Create production `.env` files with:
 3. Make your changes
 4. Submit a pull request
 
-## License
 
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues and questions:
-1. Check the [API Documentation](docs/API.md)
-2. Review [Architecture Guide](docs/ARCHITECTURE.md)
-3. Open an issue with detailed reproduction steps

@@ -16,7 +16,8 @@ TrackFleet is a real-time vehicle tracking system with three main tiers:
 │                    Application Layer                         │
 │  FastAPI Backend (Python 3.11, async)                      │
 │  ├─ REST API Routes (/api/v1/*)                           │
-│  ├─ WebSocket Endpoint (/ws/{vehicle_id})                 │
+│  ├─ WebSocket Endpoints (/ws/fleet, /ws/{vehicle_id})      │
+│  │  (JWT required as a ?token= query param)                │
 │  └─ MQTT Client (trackfleet/devices/+/location)           │
 └──────────────────────────────────────────────────────────────┘
                               ↓
@@ -104,16 +105,17 @@ backend/app/
 6. Response sent back to client
 
 **WebSocket Flow**:
-1. Client connects to `/ws/{vehicle_id}`
-2. ConnectionManager adds client to set
-3. When location is ingested, it broadcasts to subscribed clients
-4. Client disconnects → ConnectionManager removes from set
+1. Client connects to `/ws/fleet?token=...` (all owned vehicles) or `/ws/{vehicle_id}?token=...` (one vehicle)
+2. The token is validated and, for the per-vehicle endpoint, ownership of that vehicle is checked before the socket is accepted
+3. ConnectionManager adds the client to a room (`fleet:{user_id}` or the vehicle's id)
+4. When a location is ingested or an alert fires, the server broadcasts only to the relevant room(s) — never to every connection
+5. Client disconnects → ConnectionManager removes it from the room
 
 **MQTT Flow**:
 1. IoT device publishes to `trackfleet/devices/{device_id}/location`
-2. MQTT client subscribes and receives message
-3. Triggers `tracking_service.ingest_location()`
-4. Location saved to DB + cached in Redis + broadcast via WS
+2. MQTT client (running on the FastAPI event loop via `run_coroutine_threadsafe`, since paho's network loop runs on its own thread) receives the message
+3. The device_id is resolved to a vehicle, then `tracking_service.ingest_location()` is called
+4. Location saved to DB + cached in Redis + broadcast via WS + evaluated by the alert engine (geofence/speed/battery)
 
 ## Data Flow
 
@@ -138,14 +140,22 @@ TrackingService.ingest_location()
 ### Alert Creation Flow
 
 ```
-Geofence Service Check
-    ├─ Determine if point in geofence
-    ├─ Compare with previous state (from Redis)
-    └─ If changed → AlertService.create_alert()
+alert_engine.evaluate_location() (called after each location is saved)
+    ├─ Geofence check: compare containment of the previous vs. new point
+    │    for every geofence the vehicle is assigned to
+    ├─ Speed check: previous speed vs. new speed against SPEED_ALERT_THRESHOLD_KMH
+    ├─ Battery check: previous vs. new battery_level against LOW_BATTERY_THRESHOLD_PERCENT
+    └─ Each check is edge-triggered (fires once on a state transition, not
+       once per GPS ping) → on trigger, AlertService.create_alert()
         ├─ Save Alert to PostgreSQL
-        ├─ Broadcast Alert via WebSocket
-        └─ Update Alert counter in Zustand (frontend)
+        ├─ Broadcast Alert via WebSocket, scoped to the vehicle's owner
+        └─ Frontend's useFleetSocket hook pushes it into the Zustand alert
+           store, updating the unread badge in the header
 ```
+
+A separate background task (`offline_monitor.py`) polls every 60s for
+vehicles whose last location is older than `OFFLINE_ALERT_THRESHOLD_MINUTES`
+and raises an `offline` alert the first time that happens.
 
 ## Database Schema
 
@@ -203,15 +213,15 @@ Both algorithms run synchronously on each location ingest for immediate alert ge
 
 ```
 location:{vehicle_id}          # Latest GPS point (5 min TTL)
-geofence_state:{vehicle_id}:{geofence_id}  # "inside"/"outside" (persistent)
-session:{token}                # Token blacklist (optional for logout)
 ```
+
+Geofence containment state is *not* cached — it's derived on each ingest by
+comparing the vehicle's previous location (queried from PostgreSQL) against
+the new one, so there's nothing to invalidate.
 
 ### Cache Invalidation
 
 - **Location Cache**: Automatic TTL expiry (5 min)
-- **Geofence State**: Manual update on geofence crossing
-- **Session Cache**: Manual on logout
 
 ## Scalability Considerations
 
@@ -252,10 +262,13 @@ session:{token}                # Token blacklist (optional for logout)
 ## Security Architecture
 
 ### Authentication
-- JWT tokens (access + refresh)
-- Refresh tokens stored server-side (blacklist)
+- JWT tokens (access + refresh), stateless — validity is determined purely
+  by signature and expiry, there's no server-side token store/blacklist yet
 - Password hashed with bcrypt
 - Token refresh flow on 401 response
+- WebSocket connections authenticate via a `?token=` query param (browsers
+  can't set custom headers during the WS handshake) and are rejected with
+  code 4401 if the token is missing/invalid
 
 ### Authorization
 - Role-based (admin, operator, viewer)

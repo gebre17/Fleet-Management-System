@@ -1,80 +1,87 @@
 /**
  * WebSocket client for real-time tracking
  */
-export interface LocationUpdate {
-  type: string;
-  vehicle_id: string;
-  latitude: number;
-  longitude: number;
-  speed?: number;
-  heading?: number;
-  timestamp: string;
-}
+export type { LocationUpdate, AlertMessage } from '@/types/location';
+import type { LocationUpdate, AlertMessage } from '@/types/location';
+
+export type SocketMessage = LocationUpdate | AlertMessage;
 
 export class TrackingWebSocket {
   private ws: WebSocket | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
+  private closedByClient = false;
+  private path = '';
+  private token = '';
+  private onMessage: ((data: SocketMessage) => void) | null = null;
+  private onError: ((error: Event) => void) | null = null;
 
+  /**
+   * Connect to a WebSocket endpoint under NEXT_PUBLIC_WS_URL.
+   *
+   * @param path Server path, e.g. `/ws/fleet` or `/ws/${vehicleId}`
+   * @param token JWT access token (sent as a query param — the browser
+   *   WebSocket API cannot set an Authorization header)
+   */
   connect(
-    vehicleId: string,
-    onMessage: (data: LocationUpdate) => void,
+    path: string,
+    token: string,
+    onMessage: (data: SocketMessage) => void,
     onError?: (error: Event) => void
   ): void {
-    const url = `${process.env.NEXT_PUBLIC_WS_URL}/ws/${vehicleId}`;
-    
+    this.path = path;
+    this.token = token;
+    this.onMessage = onMessage;
+    this.onError = onError ?? null;
+    this.closedByClient = false;
+
+    const url = `${process.env.NEXT_PUBLIC_WS_URL}${path}?token=${encodeURIComponent(token)}`;
+
     try {
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
-        console.log(`WebSocket connected to vehicle ${vehicleId}`);
         this.reconnectAttempts = 0;
       };
 
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          onMessage(data);
+          this.onMessage?.(data);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
         }
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        if (onError) onError(error);
+        this.onError?.(error);
       };
 
       this.ws.onclose = () => {
-        console.log(`WebSocket closed for vehicle ${vehicleId}`);
-        this.attemptReconnect(vehicleId, onMessage, onError);
+        if (!this.closedByClient) {
+          this.attemptReconnect();
+        }
       };
     } catch (error) {
       console.error('Failed to create WebSocket:', error);
-      this.attemptReconnect(vehicleId, onMessage, onError);
+      this.attemptReconnect();
     }
   }
 
-  private attemptReconnect(
-    vehicleId: string,
-    onMessage: (data: LocationUpdate) => void,
-    onError?: (error: Event) => void
-  ): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts && this.onMessage) {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      
+
       this.reconnectTimer = setTimeout(() => {
-        console.log(
-          `Attempting to reconnect to vehicle ${vehicleId} (attempt ${this.reconnectAttempts})`
-        );
-        this.connect(vehicleId, onMessage, onError);
+        this.connect(this.path, this.token, this.onMessage!, this.onError ?? undefined);
       }, delay);
     }
   }
 
   disconnect(): void {
+    this.closedByClient = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

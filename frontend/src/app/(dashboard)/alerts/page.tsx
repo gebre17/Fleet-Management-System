@@ -5,13 +5,15 @@
 
 import { useEffect, useState } from 'react';
 import { getApiClient } from '@/lib/api';
-import { Alert, AlertListResponse } from '@/types/alert';
+import { AlertListResponse } from '@/types/alert';
+import { useAlertStore } from '@/store/alertStore';
 import { formatDate, formatTime } from '@/lib/utils';
 
 export default function AlertsPage() {
   const api = getApiClient();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const { alerts, unreadCount, setAlerts, markAsRead } = useAlertStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   useEffect(() => {
     const fetchAlerts = async () => {
@@ -28,7 +30,29 @@ export default function AlertsPage() {
     };
 
     fetchAlerts();
-  }, [api]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleMarkAsRead = async (alertId: string) => {
+    markAsRead(alertId);
+    try {
+      await api.put(`/api/v1/alerts/${alertId}/read`);
+    } catch (error) {
+      console.error('Failed to mark alert as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    setIsMarkingAll(true);
+    try {
+      await api.put('/api/v1/alerts/read-all');
+      setAlerts(alerts.map((a) => ({ ...a, is_read: true })));
+    } catch (error) {
+      console.error('Failed to mark all alerts as read:', error);
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -45,7 +69,18 @@ export default function AlertsPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Alerts</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Alerts</h1>
+        {unreadCount > 0 && (
+          <button
+            onClick={handleMarkAllAsRead}
+            disabled={isMarkingAll}
+            className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+          >
+            {isMarkingAll ? 'Marking...' : `Mark all ${unreadCount} as read`}
+          </button>
+        )}
+      </div>
 
       {isLoading ? (
         <p className="text-gray-600">Loading alerts...</p>
@@ -69,7 +104,14 @@ export default function AlertsPage() {
                   </p>
                 </div>
                 {!alert.is_read && (
-                  <span className="inline-block w-2 h-2 bg-current rounded-full ml-4 mt-1"></span>
+                  <button
+                    onClick={() => handleMarkAsRead(alert.id)}
+                    className="ml-4 flex items-center gap-1.5 text-xs font-medium opacity-75 hover:opacity-100"
+                    title="Mark as read"
+                  >
+                    <span className="inline-block w-2 h-2 bg-current rounded-full"></span>
+                    Mark read
+                  </button>
                 )}
               </div>
             </div>

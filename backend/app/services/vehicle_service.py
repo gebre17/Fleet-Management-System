@@ -3,7 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from app.models.vehicle import Vehicle, VehicleStatus
+from app.models.vehicle import Vehicle
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate
 from fastapi import HTTPException, status
 
@@ -143,18 +143,16 @@ class VehicleService:
         db: AsyncSession,
     ) -> None:
         """
-        Delete (soft delete) a vehicle.
-        
+        Delete a vehicle, along with its location history, alerts, and
+        geofence assignments (cascaded at the DB level).
+
         Args:
             vehicle_id: Vehicle ID
             user_id: User ID (for authorization)
             db: Database session
         """
         vehicle = await VehicleService.get_vehicle(vehicle_id, user_id, db)
-        
-        # Soft delete by marking as offline (can be extended with a deleted flag)
-        vehicle.status = VehicleStatus.OFFLINE
-        
+        await db.delete(vehicle)
         await db.commit()
     
     @staticmethod

@@ -56,3 +56,13 @@ class GeofenceVehicleAssignmentRequest(BaseModel):
     vehicle_id: UUID
     alert_on_enter: bool = True
     alert_on_exit: bool = True
+
+
+class GeofenceVehicleResponse(BaseModel):
+    """Schema for a vehicle assigned to a geofence."""
+    vehicle_id: UUID
+    alert_on_enter: bool
+    alert_on_exit: bool
+
+    class Config:
+        from_attributes = True

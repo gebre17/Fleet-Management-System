@@ -42,10 +42,13 @@ export default function SettingsPage() {
         <div>
           <h2 className="text-xl font-bold mb-4">API Settings</h2>
           <p className="text-gray-600 text-sm mb-4">
-            View your API keys and manage access tokens for integrations.
+            API key management for third-party integrations is coming soon.
           </p>
-          <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-medium transition">
-            Manage API Keys
+          <button
+            disabled
+            className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed"
+          >
+            Manage API Keys (coming soon)
           </button>
         </div>
 
@@ -53,14 +56,17 @@ export default function SettingsPage() {
 
         <div>
           <h2 className="text-xl font-bold mb-4">Notifications</h2>
-          <div className="space-y-3">
+          <p className="text-gray-600 text-sm mb-4">
+            Alerts are delivered live in the app and via the Alerts page. Email digests aren't available yet.
+          </p>
+          <div className="space-y-3 opacity-50">
             <label className="flex items-center">
-              <input type="checkbox" defaultChecked className="rounded" />
-              <span className="ml-3 text-gray-900">Email alerts for critical events</span>
+              <input type="checkbox" disabled className="rounded" />
+              <span className="ml-3 text-gray-900">Email alerts for critical events (coming soon)</span>
             </label>
             <label className="flex items-center">
-              <input type="checkbox" defaultChecked className="rounded" />
-              <span className="ml-3 text-gray-900">Daily activity summary</span>
+              <input type="checkbox" disabled className="rounded" />
+              <span className="ml-3 text-gray-900">Daily activity summary (coming soon)</span>
             </label>
           </div>
         </div>

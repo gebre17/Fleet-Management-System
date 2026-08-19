@@ -20,20 +20,9 @@ async def get_distance_report(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> list:
-    """
-    Get distance report.
-    
-    Args:
-        vehicle_id: Optional vehicle ID filter
-        start_date: Start date filter
-        end_date: End date filter
-        current_user: Current authenticated user
-        db: Database session
-    
-    Returns:
-        Distance report data
-    """
+    """Get distance report, scoped to the current user's vehicles."""
     return await report_service.get_distance_report(
+        user_id=current_user.id,
         vehicle_id=vehicle_id,
         start_date=start_date,
         end_date=end_date,
@@ -49,20 +38,9 @@ async def get_activity_report(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> list:
-    """
-    Get activity report.
-    
-    Args:
-        vehicle_id: Optional vehicle ID filter
-        start_date: Start date filter
-        end_date: End date filter
-        current_user: Current authenticated user
-        db: Database session
-    
-    Returns:
-        Activity report data
-    """
+    """Get activity report, scoped to the current user's vehicles."""
     return await report_service.get_activity_report(
+        user_id=current_user.id,
         vehicle_id=vehicle_id,
         start_date=start_date,
         end_date=end_date,
@@ -78,20 +56,9 @@ async def get_speed_report(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> list:
-    """
-    Get speed report.
-    
-    Args:
-        vehicle_id: Optional vehicle ID filter
-        start_date: Start date filter
-        end_date: End date filter
-        current_user: Current authenticated user
-        db: Database session
-    
-    Returns:
-        Speed report data
-    """
+    """Get speed report, scoped to the current user's vehicles."""
     return await report_service.get_speed_report(
+        user_id=current_user.id,
         vehicle_id=vehicle_id,
         start_date=start_date,
         end_date=end_date,
@@ -107,20 +74,9 @@ async def get_geofence_events_report(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> list:
-    """
-    Get geofence events report.
-    
-    Args:
-        vehicle_id: Optional vehicle ID filter
-        start_date: Start date filter
-        end_date: End date filter
-        current_user: Current authenticated user
-        db: Database session
-    
-    Returns:
-        Geofence events report data
-    """
+    """Get geofence events report, scoped to the current user's vehicles."""
     return await report_service.get_geofence_events_report(
+        user_id=current_user.id,
         vehicle_id=vehicle_id,
         start_date=start_date,
         end_date=end_date,

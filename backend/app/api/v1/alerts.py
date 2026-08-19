@@ -49,6 +49,7 @@ async def list_alerts(
             )
     
     alerts, total = await alert_service.list_alerts(
+        user_id=current_user.id,
         vehicle_id=vehicle_id,
         alert_type=alert_type_enum,
         is_read=is_read,
@@ -82,6 +83,7 @@ async def mark_alert_as_read(
     """
     alert = await alert_service.mark_alert_as_read(
         alert_id=alert_id,
+        user_id=current_user.id,
         db=db,
     )
     
@@ -112,6 +114,7 @@ async def mark_all_alerts_as_read(
         Count of updated alerts
     """
     count = await alert_service.mark_all_alerts_as_read(
+        user_id=current_user.id,
         vehicle_id=vehicle_id,
         db=db,
     )
