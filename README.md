@@ -281,13 +281,4 @@ Create production `.env` files with:
 3. Make your changes
 4. Submit a pull request
 
-## License
 
-MIT License - See LICENSE file for details
-
-## Support
-
-For issues and questions:
-1. Check the [API Documentation](docs/API.md)
-2. Review [Architecture Guide](docs/ARCHITECTURE.md)
-3. Open an issue with detailed reproduction steps
