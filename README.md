@@ -291,5 +291,3 @@ For issues and questions:
 1. Check the [API Documentation](docs/API.md)
 2. Review [Architecture Guide](docs/ARCHITECTURE.md)
 3. Open an issue with detailed reproduction steps
-
-
