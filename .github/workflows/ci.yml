@@ -17,9 +17,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Installs from the fully-pinned lockfile for reproducible CI runs;
+        # requirements.txt stays the human-edited source of direct deps
+        # (see backend/requirements.lock's header for how to regenerate it).
+        run: pip install -r requirements.lock
       - name: Lint (ruff)
         run: ruff check app
       - name: Format check (black)
@@ -27,11 +30,37 @@ jobs:
       - name: Run tests with coverage
         run: pytest --cov=app --cov-report=term-missing --cov-fail-under=60
       - name: Dependency audit
-        # Reports known CVEs (e.g. in transitive starlette/ecdsa deps) without
-        # failing the build: fixing some of these means a coordinated FastAPI
-        # major-version bump, which is tracked separately rather than rushed
-        # in through this gate. Remove `|| true` once that upgrade lands.
-        run: pip install pip-audit && pip-audit -r requirements.txt --skip-editable || true
+        # Fails on any *new* CVE. The IDs below are known, already-triaged
+        # findings in transitive deps we can't cleanly patch yet:
+        #   - starlette (PYSEC-2026-{161,248,249,1943,1941,2281,2280}): needs
+        #     a coordinated FastAPI major-version bump, tracked separately.
+        #   - ecdsa (PYSEC-2026-1325) / pyasn1 (PYSEC-2026-{2263,3455,3456,3457}):
+        #     pulled in transitively by python-jose for RSA/ECDSA JWT algorithms
+        #     this app doesn't use (only HS256 is used); `rsa` pins
+        #     pyasn1<0.5.0, so bumping pyasn1 directly has no effect without
+        #     first dropping unused-algorithm support from python-jose.
+        #   - pytest (PYSEC-2026-1845) / black (PYSEC-2026-{2120,2121}): dev-only
+        #     tooling, never reachable from the running application.
+        # Re-run without --ignore-vuln after each dependency bump to confirm
+        # which of these can be removed from this list.
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --skip-editable \
+            --ignore-vuln PYSEC-2026-1845 \
+            --ignore-vuln PYSEC-2026-2121 \
+            --ignore-vuln PYSEC-2026-2120 \
+            --ignore-vuln PYSEC-2026-2263 \
+            --ignore-vuln PYSEC-2026-3455 \
+            --ignore-vuln PYSEC-2026-3456 \
+            --ignore-vuln PYSEC-2026-3457 \
+            --ignore-vuln PYSEC-2026-161 \
+            --ignore-vuln PYSEC-2026-248 \
+            --ignore-vuln PYSEC-2026-249 \
+            --ignore-vuln PYSEC-2026-1943 \
+            --ignore-vuln PYSEC-2026-1941 \
+            --ignore-vuln PYSEC-2026-2281 \
+            --ignore-vuln PYSEC-2026-2280 \
+            --ignore-vuln PYSEC-2026-1325
 
   frontend:
     runs-on: ubuntu-latest
@@ -51,8 +80,13 @@ jobs:
         run: npm run type-check
       - name: Lint
         run: npm run lint
-      - name: Unit tests
-        run: npm test -- --ci
+      - name: Unit tests with coverage
+        run: npm test -- --ci --coverage
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
       - name: Build
         run: npm run build
         env:
