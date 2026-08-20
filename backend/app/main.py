@@ -1,19 +1,24 @@
 """Main FastAPI application."""
+
 import logging
 from uuid import UUID
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Depends
+
+from fastapi import Depends, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import get_db_session
+from app.core.error_tracking import configure_error_tracking
+from app.core.events import shutdown_handler, startup_handler
+from app.core.logging import configure_logging
 from app.core.security import get_user_from_token
 from app.services.vehicle_service import VehicleService
-from app.core.events import startup_handler, shutdown_handler
 from app.websocket.manager import manager
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+configure_logging()
+configure_error_tracking()
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
@@ -114,6 +119,7 @@ async def websocket_endpoint(
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
