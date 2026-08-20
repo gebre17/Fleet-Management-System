@@ -211,12 +211,19 @@ All tables have timestamps and proper indexing for performance.
 
 ```bash
 cd backend
-pytest tests/ -v
+pytest --cov=app --cov-report=term-missing
 ```
 
-### Frontend Development Testing
+Runs against an in-memory SQLite database — no Postgres/Redis/MQTT required.
 
-The frontend is tested through manual interaction and browser dev tools. Consider adding Cypress for e2e testing in production.
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
+```
+
+Uses Jest + React Testing Library. Consider adding Cypress/Playwright for e2e coverage on top of these unit tests.
 
 ## Deployment
 
@@ -276,10 +283,8 @@ Create production `.env` files with:
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, coding checks, and PR guidelines.
+See [CHANGELOG.md](CHANGELOG.md) for a history of notable changes.
 
 ## License
 
