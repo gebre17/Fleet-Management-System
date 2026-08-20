@@ -1,5 +1,5 @@
 """Configuration management."""
-from typing import List, Optional
+
 from pydantic_settings import BaseSettings
 
 
@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     # MQTT
     MQTT_HOST: str = "localhost"
     MQTT_PORT: int = 1883
-    MQTT_USERNAME: Optional[str] = None
-    MQTT_PASSWORD: Optional[str] = None
+    MQTT_USERNAME: str | None = None
+    MQTT_PASSWORD: str | None = None
 
     # JWT
     SECRET_KEY: str = "change-this-super-secret-key-in-production"
@@ -38,8 +38,13 @@ class Settings(BaseSettings):
     APP_TITLE: str = "TrackFleet API"
     APP_VERSION: str = "1.0.0"
 
+    # Observability
+    LOG_LEVEL: str = "INFO"
+    SENTRY_DSN: str | None = None
+    SENTRY_ENVIRONMENT: str = "development"
+
     @property
-    def CORS_ORIGINS(self) -> List[str]:
+    def CORS_ORIGINS(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
 
     class Config:
