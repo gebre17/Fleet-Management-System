@@ -20,8 +20,18 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Run tests
-        run: pytest -v
+      - name: Lint (ruff)
+        run: ruff check app
+      - name: Format check (black)
+        run: black --check app
+      - name: Run tests with coverage
+        run: pytest --cov=app --cov-report=term-missing --cov-fail-under=60
+      - name: Dependency audit
+        # Reports known CVEs (e.g. in transitive starlette/ecdsa deps) without
+        # failing the build: fixing some of these means a coordinated FastAPI
+        # major-version bump, which is tracked separately rather than rushed
+        # in through this gate. Remove `|| true` once that upgrade lands.
+        run: pip install pip-audit && pip-audit -r requirements.txt --skip-editable || true
 
   frontend:
     runs-on: ubuntu-latest
@@ -41,6 +51,8 @@ jobs:
         run: npm run type-check
       - name: Lint
         run: npm run lint
+      - name: Unit tests
+        run: npm test -- --ci
       - name: Build
         run: npm run build
         env:
