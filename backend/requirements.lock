@@ -1,7 +1,7 @@
 # Pinned, fully-resolved dependency set (direct + transitive) for reproducible
-# installs. Generated with `pip freeze` from the image built off requirements.txt.
+# installs. CI installs from this file, not requirements.txt directly.
 # Regenerate after changing requirements.txt:
-#   docker compose run --rm --no-deps --entrypoint sh backend -c "pip freeze" > backend/requirements.lock.txt
+#   docker compose run --rm --no-deps --entrypoint sh backend -c "pip freeze" > backend/requirements.lock
 aiosqlite==0.20.0
 alembic==1.13.1
 annotated-doc==0.0.5

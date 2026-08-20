@@ -9,6 +9,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useGeofence } from '@/hooks/useGeofence';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
+import { logger } from '@/lib/logger';
 import { Geofence, GeofenceVehicleAssignment } from '@/types/geofence';
 import { Vehicle } from '@/types/vehicle';
 
@@ -54,7 +55,7 @@ export default function GeofenceDetailPage() {
         is_active: geofenceData.is_active,
       });
     } catch (err) {
-      console.error('Failed to load geofence:', err);
+      logger.error('GeofenceDetailPage', 'Failed to load geofence', { geofenceId: params.id, error: err });
       setError('Geofence not found');
     } finally {
       setIsLoading(false);
@@ -74,7 +75,7 @@ export default function GeofenceDetailPage() {
       const updated = await updateGeofence(params.id, form);
       setGeofence(updated);
     } catch (err) {
-      console.error('Failed to update geofence:', err);
+      logger.error('GeofenceDetailPage', 'Failed to update geofence', { geofenceId: params.id, error: err });
       setError('Failed to save changes');
     } finally {
       setIsSaving(false);
@@ -88,7 +89,7 @@ export default function GeofenceDetailPage() {
       await deleteGeofence(params.id);
       router.push('/geofences');
     } catch (err) {
-      console.error('Failed to delete geofence:', err);
+      logger.error('GeofenceDetailPage', 'Failed to delete geofence', { geofenceId: params.id, error: err });
       setError('Failed to delete geofence');
       setIsDeleting(false);
     }
@@ -105,7 +106,11 @@ export default function GeofenceDetailPage() {
         setAssignments((prev) => [...prev, { vehicle_id: vehicleId, alert_on_enter: true, alert_on_exit: true }]);
       }
     } catch (err) {
-      console.error('Failed to update assignment:', err);
+      logger.error('GeofenceDetailPage', 'Failed to update vehicle assignment', {
+        geofenceId: params.id,
+        vehicleId,
+        error: err,
+      });
       setError('Failed to update vehicle assignment');
     } finally {
       setAssignmentBusy(null);

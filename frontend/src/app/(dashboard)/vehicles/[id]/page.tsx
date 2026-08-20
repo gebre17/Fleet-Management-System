@@ -9,6 +9,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import { getApiClient } from '@/lib/api';
+import { logger } from '@/lib/logger';
 import { Vehicle } from '@/types/vehicle';
 import { Location } from '@/types/location';
 import { Alert, AlertListResponse } from '@/types/alert';
@@ -45,7 +46,7 @@ export default function VehicleDetailPage() {
         setLocation(null);
       }
     } catch (err) {
-      console.error('Failed to load vehicle:', err);
+      logger.error('VehicleDetailPage', 'Failed to load vehicle', { vehicleId: params.id, error: err });
       setError('Vehicle not found');
     } finally {
       setIsLoading(false);
@@ -64,7 +65,7 @@ export default function VehicleDetailPage() {
       await deleteVehicle(params.id);
       router.push('/vehicles');
     } catch (err) {
-      console.error('Failed to delete vehicle:', err);
+      logger.error('VehicleDetailPage', 'Failed to delete vehicle', { vehicleId: params.id, error: err });
       setError('Failed to delete vehicle');
       setIsDeleting(false);
     }
