@@ -1,12 +1,14 @@
 """Application startup and shutdown events."""
+
 import asyncio
 import logging
+
 from app.core.database import close_db
-from app.services.tracking_service import tracking_service
-from app.services.geofence_service import geofence_service
-from app.services.offline_monitor import run_offline_monitor
 from app.mqtt.client import mqtt_client
 from app.mqtt.handlers import handle_device_location
+from app.services.geofence_service import geofence_service
+from app.services.offline_monitor import run_offline_monitor
+from app.services.tracking_service import tracking_service
 
 logger = logging.getLogger(__name__)
 

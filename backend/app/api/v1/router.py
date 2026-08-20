@@ -1,6 +1,8 @@
 """API v1 router."""
+
 from fastapi import APIRouter
-from app.api.v1 import auth, vehicles, tracking, geofences, alerts, reports
+
+from app.api.v1 import alerts, auth, geofences, reports, tracking, vehicles
 
 api_router = APIRouter(prefix="/api/v1", tags=["api_v1"])
 

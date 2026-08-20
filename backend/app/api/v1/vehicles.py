@@ -1,18 +1,20 @@
 """Vehicle routes."""
-from typing import Optional
+
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db_session
 from app.core.security import get_current_user
 from app.models.user import User
-from app.services.vehicle_service import VehicleService
 from app.schemas.vehicle import (
     VehicleCreate,
-    VehicleUpdate,
-    VehicleResponse,
     VehicleListResponse,
+    VehicleResponse,
+    VehicleUpdate,
 )
+from app.services.vehicle_service import VehicleService
 
 router = APIRouter()
 
@@ -25,12 +27,12 @@ async def create_vehicle(
 ) -> VehicleResponse:
     """
     Create a new vehicle.
-    
+
     Args:
         vehicle_data: Vehicle creation data
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Created vehicle
     """
@@ -51,13 +53,13 @@ async def list_vehicles(
 ) -> VehicleListResponse:
     """
     List all vehicles for current user.
-    
+
     Args:
         skip: Number of records to skip
         limit: Number of records to return
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Paginated vehicle list
     """
@@ -67,7 +69,7 @@ async def list_vehicles(
         limit=limit,
         db=db,
     )
-    
+
     return VehicleListResponse(
         total=total,
         items=[VehicleResponse.model_validate(v) for v in vehicles],
@@ -82,12 +84,12 @@ async def get_vehicle(
 ) -> VehicleResponse:
     """
     Get vehicle details.
-    
+
     Args:
         vehicle_id: Vehicle ID
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Vehicle details
     """
@@ -108,13 +110,13 @@ async def update_vehicle(
 ) -> VehicleResponse:
     """
     Update vehicle.
-    
+
     Args:
         vehicle_id: Vehicle ID
         vehicle_data: Update data
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Updated vehicle
     """
@@ -135,7 +137,7 @@ async def delete_vehicle(
 ) -> None:
     """
     Delete vehicle.
-    
+
     Args:
         vehicle_id: Vehicle ID
         current_user: Current authenticated user

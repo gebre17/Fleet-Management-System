@@ -1,18 +1,22 @@
 """Authentication routes."""
+
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db_session
 from app.core.security import get_current_user
 from app.models.user import User
 from app.services.auth_service import AuthService
-from pydantic import BaseModel, EmailStr, Field
 
 router = APIRouter()
 
 
 class RegisterRequest(BaseModel):
     """Register request schema."""
+
     email: EmailStr
     password: str = Field(..., min_length=8)
     full_name: str = Field(..., min_length=1, max_length=100)
@@ -20,17 +24,20 @@ class RegisterRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     """Login request schema."""
+
     email: EmailStr
     password: str
 
 
 class RefreshRequest(BaseModel):
     """Refresh token request schema."""
+
     refresh_token: str
 
 
 class TokenResponse(BaseModel):
     """Token response schema."""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -38,6 +45,7 @@ class TokenResponse(BaseModel):
 
 class UserResponse(BaseModel):
     """User response schema."""
+
     id: UUID
     email: str
     full_name: str
@@ -55,11 +63,11 @@ async def register(
 ) -> dict:
     """
     Register a new user.
-    
+
     Args:
         request: Registration request
         db: Database session
-    
+
     Returns:
         Access and refresh tokens
     """
@@ -69,7 +77,7 @@ async def register(
         full_name=request.full_name,
         db=db,
     )
-    
+
     tokens = AuthService.create_tokens(str(user.id))
     return tokens
 
@@ -81,11 +89,11 @@ async def login(
 ) -> dict:
     """
     Login user.
-    
+
     Args:
         request: Login request
         db: Database session
-    
+
     Returns:
         Access and refresh tokens
     """
@@ -94,7 +102,7 @@ async def login(
         password=request.password,
         db=db,
     )
-    
+
     tokens = AuthService.create_tokens(str(user.id))
     return tokens
 
@@ -114,7 +122,8 @@ async def refresh(
     Returns:
         New access and refresh tokens
     """
-    from jose import jwt, JWTError
+    from jose import JWTError, jwt
+
     from app.core.config import settings
 
     try:
@@ -151,10 +160,10 @@ async def get_current_user_info(
 ) -> User:
     """
     Get current user info.
-    
+
     Args:
         current_user: Current authenticated user
-    
+
     Returns:
         User information
     """
@@ -165,7 +174,7 @@ async def get_current_user_info(
 async def logout() -> dict:
     """
     Logout user (token blacklisting in production).
-    
+
     Returns:
         Success message
     """

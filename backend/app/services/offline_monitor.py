@@ -1,17 +1,18 @@
 """Background task that flags vehicles as offline when they stop reporting
 GPS locations, and raises an OFFLINE alert exactly once per transition.
 """
+
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.database import async_session_maker
+from app.models.alert import AlertSeverity, AlertType
 from app.models.location import Location
 from app.models.vehicle import Vehicle, VehicleStatus
-from app.models.alert import AlertType, AlertSeverity
 from app.services.alert_service import alert_service
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ CHECK_INTERVAL_SECONDS = 60
 
 
 async def _check_offline_vehicles() -> None:
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=settings.OFFLINE_ALERT_THRESHOLD_MINUTES)
+    cutoff = datetime.now(UTC) - timedelta(minutes=settings.OFFLINE_ALERT_THRESHOLD_MINUTES)
 
     async with async_session_maker() as db:
         stmt = select(Vehicle).where(Vehicle.status != VehicleStatus.OFFLINE)

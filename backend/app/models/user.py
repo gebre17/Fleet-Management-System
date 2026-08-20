@@ -1,14 +1,18 @@
 """User model."""
+
+import enum
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, Index
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, String
+
 from app.core.database import Base
 from app.models.types import GUID
-import enum
 
 
 class UserRole(str, enum.Enum):
     """User roles."""
+
     ADMIN = "admin"
     OPERATOR = "operator"
     VIEWER = "viewer"
@@ -16,6 +20,7 @@ class UserRole(str, enum.Enum):
 
 class User(Base):
     """User model."""
+
     __tablename__ = "users"
 
     id = Column(GUID, primary_key=True, default=uuid4)
@@ -26,12 +31,12 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )

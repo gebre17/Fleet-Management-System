@@ -1,12 +1,14 @@
 """Report service."""
+
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+
+from app.models.alert import Alert, AlertType
 from app.models.location import Location
 from app.models.vehicle import Vehicle
-from app.models.alert import Alert, AlertType
 from app.utils.geo import haversine_distance
 
 
@@ -17,11 +19,11 @@ class ReportService:
     @staticmethod
     async def get_distance_report(
         user_id: UUID,
-        vehicle_id: Optional[UUID] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        vehicle_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         db: AsyncSession = None,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Generate distance report."""
         stmt = select(Location).join(Vehicle, Vehicle.id == Location.vehicle_id)
 
@@ -74,11 +76,11 @@ class ReportService:
     @staticmethod
     async def get_activity_report(
         user_id: UUID,
-        vehicle_id: Optional[UUID] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        vehicle_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         db: AsyncSession = None,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Generate activity report (online/offline duration)."""
         stmt = select(Vehicle).where(Vehicle.user_id == user_id)
         if vehicle_id:
@@ -110,29 +112,27 @@ class ReportService:
 
             online_duration = (last_location.timestamp - first_location.timestamp).total_seconds() / 3600
 
-            report.append({
-                "vehicle_id": str(vehicle.id),
-                "vehicle_name": vehicle.name,
-                "online_hours": round(online_duration, 2),
-                "location_count": len(locations),
-            })
+            report.append(
+                {
+                    "vehicle_id": str(vehicle.id),
+                    "vehicle_name": vehicle.name,
+                    "online_hours": round(online_duration, 2),
+                    "location_count": len(locations),
+                }
+            )
 
         return report
 
     @staticmethod
     async def get_speed_report(
         user_id: UUID,
-        vehicle_id: Optional[UUID] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        vehicle_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         db: AsyncSession = None,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Generate speed report (average and max speed)."""
-        stmt = (
-            select(Location)
-            .join(Vehicle, Vehicle.id == Location.vehicle_id)
-            .where(Location.speed > 0)
-        )
+        stmt = select(Location).join(Vehicle, Vehicle.id == Location.vehicle_id).where(Location.speed > 0)
 
         filters = [Vehicle.user_id == user_id]
         if vehicle_id:
@@ -167,11 +167,11 @@ class ReportService:
     @staticmethod
     async def get_geofence_events_report(
         user_id: UUID,
-        vehicle_id: Optional[UUID] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        vehicle_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         db: AsyncSession = None,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Generate geofence events report."""
         stmt = (
             select(Alert)

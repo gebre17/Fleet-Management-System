@@ -1,9 +1,12 @@
 """MQTT client for IoT device communication."""
+
 import asyncio
-from typing import Awaitable, Callable, Optional
 import json
 import logging
+from collections.abc import Awaitable, Callable
+
 import paho.mqtt.client as mqtt
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -23,10 +26,10 @@ class MQTTClient:
     """
 
     def __init__(self):
-        self.client: Optional[mqtt.Client] = None
+        self.client: mqtt.Client | None = None
         self.is_connected: bool = False
-        self.on_location_received: Optional[Callable[[dict], Awaitable[None]]] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self.on_location_received: Callable[[dict], Awaitable[None]] | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     def connect(self) -> None:
         """Connect to MQTT broker."""

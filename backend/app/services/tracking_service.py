@@ -1,17 +1,19 @@
 """Tracking service."""
+
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import Optional
+
+import redis.asyncio as redis
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+
 from app.core.config import settings
-from app.models.vehicle import Vehicle, VehicleStatus
 from app.models.location import Location
+from app.models.vehicle import Vehicle, VehicleStatus
 from app.schemas.location import LocationCreate
 from app.services import alert_engine
 from app.websocket.manager import manager
-import redis.asyncio as redis
 
 
 class TrackingService:
@@ -56,7 +58,7 @@ class TrackingService:
             Created location record
         """
         if not location_data.timestamp:
-            location_data.timestamp = datetime.now(timezone.utc)
+            location_data.timestamp = datetime.now(UTC)
 
         # Load the vehicle and its previous location *before* inserting the
         # new one, so the alert engine can detect enter/exit/threshold
@@ -64,10 +66,7 @@ class TrackingService:
         vehicle = await db.get(Vehicle, vehicle_id)
         previous_location = await self.get_latest_location(vehicle_id, db)
 
-        location = Location(
-            vehicle_id=vehicle_id,
-            **location_data.model_dump()
-        )
+        location = Location(vehicle_id=vehicle_id, **location_data.model_dump())
 
         db.add(location)
         await db.commit()
@@ -115,7 +114,7 @@ class TrackingService:
         self,
         vehicle_id: UUID,
         db: AsyncSession,
-    ) -> Optional[Location]:
+    ) -> Location | None:
         """
         Get latest location for a vehicle.
 
@@ -138,8 +137,8 @@ class TrackingService:
     async def get_location_history(
         self,
         vehicle_id: UUID,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         limit: int = 1000,
         db: AsyncSession = None,
     ) -> list[Location]:

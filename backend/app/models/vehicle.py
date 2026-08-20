@@ -1,14 +1,18 @@
 """Vehicle model."""
+
+import enum
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, DateTime, Enum, ForeignKey, Index
+
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, Integer, String
+
 from app.core.database import Base
 from app.models.types import GUID
-import enum
 
 
 class VehicleType(str, enum.Enum):
     """Vehicle types."""
+
     CAR = "car"
     TRUCK = "truck"
     MOTORCYCLE = "motorcycle"
@@ -17,6 +21,7 @@ class VehicleType(str, enum.Enum):
 
 class VehicleStatus(str, enum.Enum):
     """Vehicle status."""
+
     ACTIVE = "active"
     IDLE = "idle"
     OFFLINE = "offline"
@@ -25,6 +30,7 @@ class VehicleStatus(str, enum.Enum):
 
 class Vehicle(Base):
     """Vehicle model."""
+
     __tablename__ = "vehicles"
 
     id = Column(GUID, primary_key=True, default=uuid4)
@@ -44,16 +50,14 @@ class Vehicle(Base):
     color = Column(String(30))
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("ix_vehicles_user_id", "user_id"),
-    )
+    __table_args__ = (Index("ix_vehicles_user_id", "user_id"),)

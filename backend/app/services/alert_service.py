@@ -1,10 +1,12 @@
 """Alert service."""
-from datetime import datetime, timezone
-from typing import List, Optional
+
+from datetime import UTC, datetime
 from uuid import UUID
+
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc, func
-from app.models.alert import Alert, AlertType, AlertSeverity
+
+from app.models.alert import Alert, AlertSeverity, AlertType
 from app.models.vehicle import Vehicle
 from app.websocket.manager import manager
 
@@ -19,9 +21,9 @@ class AlertService:
         severity: AlertSeverity,
         message: str,
         db: AsyncSession,
-        geofence_id: Optional[UUID] = None,
-        metadata: Optional[dict] = None,
-        owner_id: Optional[UUID] = None,
+        geofence_id: UUID | None = None,
+        metadata: dict | None = None,
+        owner_id: UUID | None = None,
     ) -> Alert:
         """
         Create a new alert.
@@ -48,7 +50,7 @@ class AlertService:
             severity=severity,
             message=message,
             alert_metadata=metadata or {},
-            triggered_at=datetime.now(timezone.utc),
+            triggered_at=datetime.now(UTC),
         )
 
         db.add(alert)
@@ -80,13 +82,13 @@ class AlertService:
     @staticmethod
     async def list_alerts(
         user_id: UUID,
-        vehicle_id: Optional[UUID] = None,
-        alert_type: Optional[AlertType] = None,
-        is_read: Optional[bool] = None,
+        vehicle_id: UUID | None = None,
+        alert_type: AlertType | None = None,
+        is_read: bool | None = None,
         skip: int = 0,
         limit: int = 50,
         db: AsyncSession = None,
-    ) -> tuple[List[Alert], int]:
+    ) -> tuple[list[Alert], int]:
         """
         List alerts, scoped to vehicles owned by ``user_id``, with filters.
 
@@ -134,7 +136,7 @@ class AlertService:
         alert_id: UUID,
         user_id: UUID,
         db: AsyncSession,
-    ) -> Optional[Alert]:
+    ) -> Alert | None:
         """
         Mark an alert as read, if it belongs to a vehicle owned by ``user_id``.
 
@@ -164,7 +166,7 @@ class AlertService:
     @staticmethod
     async def mark_all_alerts_as_read(
         user_id: UUID,
-        vehicle_id: Optional[UUID] = None,
+        vehicle_id: UUID | None = None,
         db: AsyncSession = None,
     ) -> int:
         """

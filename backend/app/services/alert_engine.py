@@ -6,17 +6,17 @@ to the new one) rather than level-triggered, so a vehicle sitting still
 inside a geofence, over the speed limit, or with a low battery only
 generates one alert per transition instead of one per GPS ping.
 """
+
 import logging
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.alert import AlertSeverity, AlertType
 from app.models.geofence import Geofence, GeofenceVehicle
 from app.models.location import Location
 from app.models.vehicle import Vehicle
-from app.models.alert import AlertType, AlertSeverity
 from app.services.alert_service import alert_service
 from app.services.geofence_service import GeofenceService
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 async def evaluate_location(
     vehicle: Vehicle,
-    previous: Optional[Location],
+    previous: Location | None,
     current: Location,
     db: AsyncSession,
 ) -> None:
@@ -37,7 +37,7 @@ async def evaluate_location(
 
 async def _evaluate_geofences(
     vehicle: Vehicle,
-    previous: Optional[Location],
+    previous: Location | None,
     current: Location,
     db: AsyncSession,
 ) -> None:
@@ -80,7 +80,7 @@ async def _evaluate_geofences(
 
 async def _evaluate_speeding(
     vehicle: Vehicle,
-    previous: Optional[Location],
+    previous: Location | None,
     current: Location,
     db: AsyncSession,
 ) -> bool:
@@ -104,7 +104,7 @@ async def _evaluate_speeding(
 
 async def _evaluate_battery(
     vehicle: Vehicle,
-    previous: Optional[Location],
+    previous: Location | None,
     current: Location,
     db: AsyncSession,
 ) -> None:

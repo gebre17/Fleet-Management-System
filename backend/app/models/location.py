@@ -1,13 +1,17 @@
 """Location model."""
+
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Float, Index, ForeignKey, Integer
+
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer
+
 from app.core.database import Base
 from app.models.types import GUID
 
 
 class Location(Base):
     """Location model for GPS tracking."""
+
     __tablename__ = "locations"
 
     id = Column(GUID, primary_key=True, default=uuid4)
@@ -22,7 +26,7 @@ class Location(Base):
     timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 

@@ -1,20 +1,22 @@
 """Geofence routes."""
-from typing import List
+
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db_session
 from app.core.security import get_current_user
 from app.models.user import User
-from app.services.geofence_service import geofence_service
 from app.schemas.geofence import (
     GeofenceCreate,
-    GeofenceUpdate,
-    GeofenceResponse,
     GeofenceListResponse,
+    GeofenceResponse,
+    GeofenceUpdate,
     GeofenceVehicleAssignmentRequest,
     GeofenceVehicleResponse,
 )
+from app.services.geofence_service import geofence_service
 
 router = APIRouter()
 
@@ -27,12 +29,12 @@ async def create_geofence(
 ) -> GeofenceResponse:
     """
     Create a new geofence.
-    
+
     Args:
         geofence_data: Geofence creation data
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Created geofence
     """
@@ -53,13 +55,13 @@ async def list_geofences(
 ) -> GeofenceListResponse:
     """
     List all geofences for current user.
-    
+
     Args:
         skip: Number of records to skip
         limit: Number of records to return
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Paginated geofence list
     """
@@ -69,7 +71,7 @@ async def list_geofences(
         limit=limit,
         db=db,
     )
-    
+
     return GeofenceListResponse(
         total=total,
         items=[GeofenceResponse.model_validate(g) for g in geofences],
@@ -84,12 +86,12 @@ async def get_geofence(
 ) -> GeofenceResponse:
     """
     Get geofence details.
-    
+
     Args:
         geofence_id: Geofence ID
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Geofence details
     """
@@ -110,13 +112,13 @@ async def update_geofence(
 ) -> GeofenceResponse:
     """
     Update geofence.
-    
+
     Args:
         geofence_id: Geofence ID
         geofence_data: Update data
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Updated geofence
     """
@@ -137,7 +139,7 @@ async def delete_geofence(
 ) -> None:
     """
     Delete geofence.
-    
+
     Args:
         geofence_id: Geofence ID
         current_user: Current authenticated user
@@ -159,13 +161,13 @@ async def assign_vehicle_to_geofence(
 ) -> dict:
     """
     Assign vehicle to geofence.
-    
+
     Args:
         geofence_id: Geofence ID
         assignment: Assignment configuration
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Assignment confirmation
     """
@@ -177,16 +179,16 @@ async def assign_vehicle_to_geofence(
         alert_on_exit=assignment.alert_on_exit,
         db=db,
     )
-    
+
     return {"message": "Vehicle assigned to geofence"}
 
 
-@router.get("/{geofence_id}/vehicles", response_model=List[GeofenceVehicleResponse])
+@router.get("/{geofence_id}/vehicles", response_model=list[GeofenceVehicleResponse])
 async def list_geofence_vehicles(
     geofence_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
-) -> List[GeofenceVehicleResponse]:
+) -> list[GeofenceVehicleResponse]:
     """
     List vehicles assigned to a geofence.
 
@@ -215,7 +217,7 @@ async def unassign_vehicle_from_geofence(
 ) -> None:
     """
     Remove vehicle from geofence.
-    
+
     Args:
         geofence_id: Geofence ID
         vehicle_id: Vehicle ID

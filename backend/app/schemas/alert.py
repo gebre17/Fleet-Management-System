@@ -1,13 +1,17 @@
 """Pydantic schemas for alerts."""
-from uuid import UUID
+
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
-from app.models.alert import AlertType, AlertSeverity
+
+from app.models.alert import AlertSeverity, AlertType
 
 
 class AlertBase(BaseModel):
     """Base alert schema."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     type: AlertType
@@ -19,22 +23,24 @@ class AlertBase(BaseModel):
     # falling back to the real one). serialization_alias keeps the JSON
     # response key as the friendlier `metadata` without touching how the
     # field is read off the ORM object.
-    alert_metadata: Optional[Dict[str, Any]] = Field(None, serialization_alias="metadata")
+    alert_metadata: dict[str, Any] | None = Field(None, serialization_alias="metadata")
 
 
 class AlertCreate(AlertBase):
     """Schema for creating an alert."""
+
     vehicle_id: UUID
-    geofence_id: Optional[UUID] = None
+    geofence_id: UUID | None = None
 
 
 class AlertResponse(AlertBase):
     """Schema for alert response."""
+
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
     id: UUID
     vehicle_id: UUID
-    geofence_id: Optional[UUID]
+    geofence_id: UUID | None
     is_read: bool
     triggered_at: datetime
     created_at: datetime
@@ -42,10 +48,12 @@ class AlertResponse(AlertBase):
 
 class AlertListResponse(BaseModel):
     """Schema for alert list response."""
+
     total: int
     items: list[AlertResponse]
 
 
 class AlertUpdateRequest(BaseModel):
     """Schema for updating an alert."""
-    is_read: Optional[bool] = None
+
+    is_read: bool | None = None

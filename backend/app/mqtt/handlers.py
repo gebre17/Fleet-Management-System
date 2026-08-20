@@ -1,18 +1,19 @@
 """MQTT event handlers."""
+
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import ValidationError
 
 from app.core.database import async_session_maker
 from app.schemas.location import LocationCreate
-from app.services.vehicle_service import VehicleService
 from app.services.tracking_service import tracking_service
+from app.services.vehicle_service import VehicleService
 
 logger = logging.getLogger(__name__)
 
 
-async def handle_device_location(data: Dict[str, Any]) -> None:
+async def handle_device_location(data: dict[str, Any]) -> None:
     """
     Handle a location payload published by a GPS device over MQTT.
 

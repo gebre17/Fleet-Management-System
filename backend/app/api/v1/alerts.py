@@ -1,23 +1,25 @@
 """Alert routes."""
-from typing import Optional
+
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db_session
 from app.core.security import get_current_user
-from app.models.user import User
 from app.models.alert import AlertType
+from app.models.user import User
+from app.schemas.alert import AlertListResponse, AlertResponse
 from app.services.alert_service import alert_service
-from app.schemas.alert import AlertResponse, AlertListResponse, AlertUpdateRequest
 
 router = APIRouter()
 
 
 @router.get("/", response_model=AlertListResponse)
 async def list_alerts(
-    vehicle_id: Optional[UUID] = Query(None),
-    alert_type: Optional[str] = Query(None),
-    is_read: Optional[bool] = Query(None),
+    vehicle_id: UUID | None = Query(None),
+    alert_type: str | None = Query(None),
+    is_read: bool | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -25,7 +27,7 @@ async def list_alerts(
 ) -> AlertListResponse:
     """
     List alerts with filters.
-    
+
     Args:
         vehicle_id: Filter by vehicle ID
         alert_type: Filter by alert type
@@ -34,7 +36,7 @@ async def list_alerts(
         limit: Number of records to return
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Paginated alert list
     """
@@ -47,7 +49,7 @@ async def list_alerts(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid alert type: {alert_type}",
             )
-    
+
     alerts, total = await alert_service.list_alerts(
         user_id=current_user.id,
         vehicle_id=vehicle_id,
@@ -57,7 +59,7 @@ async def list_alerts(
         limit=limit,
         db=db,
     )
-    
+
     return AlertListResponse(
         total=total,
         items=[AlertResponse.model_validate(a) for a in alerts],
@@ -72,12 +74,12 @@ async def mark_alert_as_read(
 ) -> AlertResponse:
     """
     Mark alert as read.
-    
+
     Args:
         alert_id: Alert ID
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Updated alert
     """
@@ -86,30 +88,30 @@ async def mark_alert_as_read(
         user_id=current_user.id,
         db=db,
     )
-    
+
     if not alert:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Alert not found",
         )
-    
+
     return AlertResponse.model_validate(alert)
 
 
 @router.put("/read-all", response_model=dict)
 async def mark_all_alerts_as_read(
-    vehicle_id: Optional[UUID] = Query(None),
+    vehicle_id: UUID | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> dict:
     """
     Mark all alerts as read.
-    
+
     Args:
         vehicle_id: Optional vehicle ID to filter
         current_user: Current authenticated user
         db: Database session
-    
+
     Returns:
         Count of updated alerts
     """
@@ -118,5 +120,5 @@ async def mark_all_alerts_as_read(
         vehicle_id=vehicle_id,
         db=db,
     )
-    
+
     return {"alerts_updated": count}

@@ -3,9 +3,11 @@
 Lets the same models run against PostgreSQL in production/Docker and
 SQLite in-memory for fast unit tests, without maintaining two schemas.
 """
+
 import uuid
-from sqlalchemy.types import TypeDecorator, CHAR
+
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.types import CHAR, TypeDecorator
 
 
 class GUID(TypeDecorator):

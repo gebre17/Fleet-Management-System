@@ -1,20 +1,25 @@
 """Geofence model."""
+
+import enum
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, Float, ForeignKey, Index, JSON
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey, Index, String
+
 from app.core.database import Base
 from app.models.types import GUID
-import enum
 
 
 class GeofenceType(str, enum.Enum):
     """Geofence types."""
+
     CIRCLE = "circle"
     POLYGON = "polygon"
 
 
 class Geofence(Base):
     """Geofence model."""
+
     __tablename__ = "geofences"
 
     id = Column(GUID, primary_key=True, default=uuid4)
@@ -32,7 +37,7 @@ class Geofence(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
@@ -41,6 +46,7 @@ class Geofence(Base):
 
 class GeofenceVehicle(Base):
     """Many-to-many relationship between geofences and vehicles."""
+
     __tablename__ = "geofence_vehicles"
 
     geofence_id = Column(GUID, ForeignKey("geofences.id", ondelete="CASCADE"), primary_key=True)
