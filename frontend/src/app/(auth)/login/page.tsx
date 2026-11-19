@@ -13,6 +13,7 @@ export default function LoginPage() {
   const { login, isLoading, error, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -27,6 +28,20 @@ export default function LoginPage() {
       router.push('/');
     } catch (err) {
       // Error handled by store
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setIsDemoLoading(true);
+    setEmail('demo@trackfleet.com');
+    setPassword('password123');
+    try {
+      await login('demo@trackfleet.com', 'password123');
+      router.push('/');
+    } catch (err) {
+      // Error handled by store
+    } finally {
+      setIsDemoLoading(false);
     }
   };
 
@@ -74,19 +89,34 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isDemoLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition"
             >
-              {isLoading ? 'Logging in...' : 'Log In'}
+              {isLoading && !isDemoLoading ? 'Logging in...' : 'Log In'}
             </button>
           </form>
 
-          <p className="text-center text-gray-600 text-sm mt-6">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-blue-600 hover:underline">
-              Sign up here
-            </Link>
-          </p>
+          {/* 1-Click Demo Login Button */}
+          <div className="mt-5 pt-5 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isLoading || isDemoLoading}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg shadow-sm transition"
+            >
+              <span>🚀</span>
+              <span>{isDemoLoading ? 'Entering Demo...' : 'Explore as Demo User (1-Click)'}</span>
+            </button>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Instant access with pre-loaded demo credentials (`demo@trackfleet.com`)
+            </p>
+          </div>
+
+          <div className="mt-6 text-center">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+              🔒 Public Portfolio Mode • Registration Closed
+            </span>
+          </div>
         </div>
       </div>
     </div>

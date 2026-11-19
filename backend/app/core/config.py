@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # App
     APP_TITLE: str = "TrackFleet API"
     APP_VERSION: str = "1.0.0"
+    ALLOW_REGISTRATION: bool = False
 
     # Observability
     LOG_LEVEL: str = "INFO"
