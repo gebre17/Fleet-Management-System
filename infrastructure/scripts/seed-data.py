@@ -1,18 +1,19 @@
 """Seed database with sample data."""
 import asyncio
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.models import Base, User, Vehicle
 from app.models.vehicle import VehicleType, VehicleStatus
 from app.core.security import hash_password
+from app.core.config import settings
 from uuid import uuid4
 
 
 async def seed_database():
     """Seed database with sample data."""
-    # Create engine
-    engine = create_async_engine(
-        "postgresql+asyncpg://trackfleet:trackfleet_dev_password@postgres:5432/trackfleet"
-    )
+    # Create engine from settings or DATABASE_URL env var
+    db_url = os.getenv("DATABASE_URL") or settings.DATABASE_URL
+    engine = create_async_engine(db_url)
 
     # Create session
     async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
