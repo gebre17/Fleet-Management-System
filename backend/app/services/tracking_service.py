@@ -33,7 +33,8 @@ class TrackingService:
 
     async def init(self) -> None:
         """Initialize Redis connection."""
-        self.redis_client = await redis.from_url(self.redis_url)
+        url = self.redis_url.strip().strip('"').strip("'")
+        self.redis_client = await redis.from_url(url)
 
     async def close(self) -> None:
         """Close Redis connection."""
